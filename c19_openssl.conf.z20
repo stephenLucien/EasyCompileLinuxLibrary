@@ -1,0 +1,6 @@
+EXPORT_TOOLCHAIN=false
+
+CMAKE_OPTS=
+
+CONFIGURE_OPTS="no-shared no-tests linux-armv4"
+

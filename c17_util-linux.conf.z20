@@ -1,0 +1,4 @@
+
+CMAKE_OPTS=
+
+CONFIGURE_OPTS="--enable-pic --disable-rpath --disable-year2038 --without-ncursesw --without-ncurses"

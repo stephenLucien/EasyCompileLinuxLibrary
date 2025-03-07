@@ -1,0 +1,5 @@
+
+CMAKE_OPTS=
+
+CONFIGURE_OPTS="--disable-debug --disable-shared --enable-static --enable-pic"
+
