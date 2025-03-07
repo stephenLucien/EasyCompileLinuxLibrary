@@ -1,0 +1,3 @@
+
+CMAKE_OPTS="-DSTATIC=ON -DMODULES=\"account;auresamp;g711;uuid\""
+CONFIGURE_OPTS=

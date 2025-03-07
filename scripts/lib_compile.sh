@@ -1,30 +1,22 @@
 #!/bin/bash
-ENV_DIR=$(dirname $(realpath ${BASH_SOURCE}))
+COMMON_SCRIPTS_DIR=$(dirname $(realpath ${BASH_SOURCE}))
 
-if test $# -lt 1; then
-    echo "argc: $#, should provide resource"
-    exit 0
-fi
-RES_FILE=$1
-if test ! -f $RES_FILE; then
-    echo "$RES_FILE not a file"
-    exit 0
-fi
-
-TOP_DIR=${ENV_DIR}/..
-THIRDPARTY_SRC_DIR=${TOP_DIR}/sources
-
-source ${ENV_DIR}/env.sh
-source $RES_FILE
-if test -e $RES_FILE.$(basename ${ENV_DIR}); then
-    source $RES_FILE.$(basename ${ENV_DIR})
-fi
+TOP_DIR=${COMMON_SCRIPTS_DIR}/..
+THIRDPARTY_SRC_DIR=${THIRDPARTY_SRC_DIR=${TOP_DIR}/sources}
 
 LIBNAME_TMP=${GIT_SOURCE##*/}
 LIBNAME=${LIBNAME_TMP%%.git}
 LIB_DIR=${THIRDPARTY_SRC_DIR}/${LIBNAME}
-BUILD_DIR=${TEMP_DIR}/${LIBNAME}
-INSTALL_DIR=${STAGE_DIR}/${LIBNAME}
+BUILD_DIR_NAME=${BUILD_DIR_NAME=build}
+BUILD_DIR=${BUILD_DIR=${LIB_DIR}/${BUILD_DIR_NAME}}
+TMP_INSTALL_DIR=${TMP_INSTALL_DIR=${BUILD_DIR}/usr}
+INSTALL_SUBDIR=${INSTALL_SUBDIR=""}
+INSTALL_DIR=${INSTALL_DIR=${SYSROOT}/usr${INSTALL_SUBDIR}}
+
+if test ! -d "${LIB_DIR}"; then
+    echo "dir: ${LIB_DIR} not found"
+    exit 1
+fi
 
 try_fetch_git() {
     if test -z "${GIT_SOURCE}"; then
@@ -85,8 +77,9 @@ make_clean() {
 }
 
 try_make_clean() {
-    make_clean ${BUILD_DIR}
+    echo "try_make_clean"
     make_clean ${LIB_DIR}
+    make_clean ${BUILD_DIR}
 }
 
 make_compile() {
@@ -118,6 +111,8 @@ make_install() {
     if test $? -ne 0; then
         return
     fi
+    rm -rf ${TMP_INSTALL_DIR}
+    mkdir -p ${TMP_INSTALL_DIR}
     ${MAKE} install | tee make_install.log
 }
 
@@ -133,54 +128,79 @@ configure_ac_exist() {
     if test ! -d "${LIB_DIR}"; then
         return
     fi
-    local found_conf=$(find ${LIB_DIR} -maxdepth 1 -iname 'configure.ac')
-    if test -z "${found_conf}"; then
+    local conf_ac_script
+    #
+    # conf_ac_script=$(find ${LIB_DIR} -maxdepth 1 -iname 'aconfigure.ac' | head -n 1)
+    # if test -f "${conf_ac_script}"; then
+    #     echo ${conf_ac_script}
+    #     return
+    # fi
+
+    conf_ac_script=$(find ${LIB_DIR} -maxdepth 1 -iname 'configure.ac' | head -n 1)
+    if test -f "${conf_ac_script}"; then
+        echo ${conf_ac_script}
         return
     fi
-    echo 1
 }
 
 configure_ac_conf() {
-    if test ! "$(configure_ac_exist)" = "1"; then
+    echo "check autoconf"
+
+    local CONF_AC_SCRIPT="$(configure_ac_exist)"
+    local CMD
+    if test ! -e "${CONF_AC_SCRIPT}"; then
         return
     fi
 
-    test -e ${BUILD_DIR} || mkdir -p ${BUILD_DIR}
-    cd ${BUILD_DIR}
+    cd ${LIB_DIR}
     if test $? -ne 0; then
         return
     fi
 
-    autoconf -i | tee autoconf.log
+    CMD="autoconf -i"
+    echo $CMD
+    eval $CMD | tee autoconf.log
 }
 
 configure_exist() {
     if test ! -d "${LIB_DIR}"; then
         return
     fi
-    local found_conf=$(find ${LIB_DIR} -maxdepth 1 -iname 'configure')
-    if test -z "${found_conf}"; then
+    local conf_script
+    #
+    conf_script=$(find ${LIB_DIR} -maxdepth 1 -iname 'aconfigure' | head -n 1)
+    if test -x "${conf_script}"; then
+        echo ${conf_script}
         return
     fi
-    echo 1
+    #
+    conf_script=$(find ${LIB_DIR} -maxdepth 1 -iname 'configure' | head -n 1)
+    if test -x "${conf_script}"; then
+        echo ${conf_script}
+        return
+    fi
 }
 
 configure_conf() {
-    if test ! "$(configure_exist)" = "1"; then
+    echo "check configure"
+    local CONF_SCRIPT="$(configure_exist)"
+    local CMD
+    if test ! -x "${CONF_SCRIPT}"; then
         return
     fi
 
-    test -e ${BUILD_DIR} || mkdir -p ${BUILD_DIR}
-    cd ${BUILD_DIR}
-    if test $? -ne 0; then
-        return
-    fi
-
-    CONFIGURE_OPTS="${CONFIGURE_OPTS} --prefix=${INSTALL_DIR}"
+    CONFIGURE_OPTS="${CONFIGURE_OPTS} --prefix=${TMP_INSTALL_DIR}"
     if test -n "${TOOLCHAIN_TRIPLE}"; then
         CONFIGURE_OPTS="${CONFIGURE_OPTS} --host=${TOOLCHAIN_TRIPLE}"
     fi
-    ./configure ${CONFIGURE_OPTS} | tee configure.log
+    cd ${LIB_DIR}
+    if test $? -ne 0; then
+        echo "lib dir not found: ${LIB_DIR}"
+        return
+    fi
+    CMD="${CONF_SCRIPT} ${CONFIGURE_OPTS}"
+    echo "$CMD"
+    eval $CMD | tee configure.log
 }
 
 cmake_exist() {
@@ -195,6 +215,7 @@ cmake_exist() {
 }
 
 cmake_conf() {
+    local CMD
     if test ! "$(cmake_exist)" = "1"; then
         return
     fi
@@ -205,11 +226,14 @@ cmake_conf() {
         return
     fi
 
-    cmake -G "${CMAKE_GENERATOR}" \
+    CMD="cmake -G \"${CMAKE_GENERATOR}\" \
         -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} \
-        -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+        -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL_DIR} \
         ${CMAKE_OPTS} \
-        ${LIB_DIR} | tee cmake.log
+        ${LIB_DIR} \
+        "
+    echo "$CMD"
+    eval $CMD | tee cmake.log
 
 }
 
@@ -235,7 +259,8 @@ cmake_install() {
         return
     fi
 
-    rm -rf ${INSTALL_DIR}
+    rm -rf ${TMP_INSTALL_DIR}
+    mkdir -p ${TMP_INSTALL_DIR}
     ${GENERATOR} install | tee generator_install.log
 }
 
@@ -249,11 +274,13 @@ post_patch() {
 
 post_install() {
     echo "" >/dev/null
-    mkdir -p ${STAGE_SYSROOT_DIR}/usr
-    cp -rv ${INSTALL_DIR}/* ${STAGE_SYSROOT_DIR}/usr/ | tee post_install.log >/dev/null
+    # return
+    test -e ${INSTALL_DIR} || mkdir -p ${INSTALL_DIR}
+    cp -rf ${TMP_INSTALL_DIR}/* ${INSTALL_DIR}
 }
 
 routine_cmake() {
+    echo "routine_cmake"
     try_fetch_git
     try_make_clean
     rm -rf ${BUILD_DIR}
@@ -267,6 +294,7 @@ routine_cmake() {
 }
 
 routine_configure() {
+    echo "routine_configure"
     try_fetch_git
     try_make_clean
     rm -rf ${BUILD_DIR}

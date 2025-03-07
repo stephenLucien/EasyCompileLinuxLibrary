@@ -1,0 +1,3 @@
+
+CMAKE_OPTS=""
+CONFIGURE_OPTS="--disable-video --enable-ext-sound --disable-sdl --disable-ffmpeg --disable-v4l2 --disable-openh264 --disable-vpx"
