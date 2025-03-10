@@ -24,6 +24,7 @@ try_fetch_git() {
         return
     fi
     if test ! -e "${LIB_DIR}"; then
+        mkdir -p $(dirname ${LIB_DIR})
         cd $(dirname ${LIB_DIR})
         # git clone ${GIT_SOURCE}
         $(which proxychains4) git clone ${GIT_SOURCE}

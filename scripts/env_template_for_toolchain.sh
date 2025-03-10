@@ -67,6 +67,18 @@ RANLIB=${RANLIB=${CROSS_COMPILE}ranlib}
 ADDR2LINE=${ADDR2LINE=${CROSS_COMPILE}addr2line}
 STRIP=${STRIP=${CROSS_COMPILE}strip}
 
+function check_gcc_exit() {
+    echo "Check ${CXX}"
+    local TMPFILE=$(mktemp)
+    ${CXX} -E -xc++ -v /dev/null >$TMPFILE 2>&1
+    if test $? -ne 0; then
+        cat $TMPFILE
+        exit 1
+    fi
+    rm $TMPFILE
+}
+check_gcc_exit
+
 function export_toolchain() {
     export CC
     export CXX
