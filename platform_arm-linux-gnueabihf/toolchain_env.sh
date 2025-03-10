@@ -1,14 +1,15 @@
 #!/bin/bash
 PLATFORM_DIR=$(dirname $(realpath ${BASH_SOURCE}))
 
-TOOLCHAIN_DIR=${PLATFORM_DIR}/toolchain
-TOOLCHAIN_BIN_DIR=${TOOLCHAIN_DIR}/bin
+TOOLCHAIN_BIN_DIR=$(dirname $(which arm-linux-gnueabihf-gcc))
 
 TOOLCHAIN_TRIPLE=arm-linux-gnueabihf
 
 SYSTEM_NAME=Linux
 
 SYSTEM_PROCESSOR=arm
+
+SYSROOT=${PLATFORM_DIR}/sysroot
 
 CFLAGS="-mfloat-abi=hard -mfpu=vfp"
 CFLAGS="${CFLAGS} -fPIC"

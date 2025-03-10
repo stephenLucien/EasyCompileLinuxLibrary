@@ -1,4 +1,3 @@
-host_linux/stage
-host_linux/sysroot
-host_linux/tmp
+platform_*
 sources
+.cache

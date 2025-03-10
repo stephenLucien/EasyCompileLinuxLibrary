@@ -13,10 +13,11 @@ TMP_INSTALL_DIR=${TMP_INSTALL_DIR=${BUILD_DIR}/usr}
 INSTALL_SUBDIR=${INSTALL_SUBDIR=""}
 INSTALL_DIR=${INSTALL_DIR=${SYSROOT}/usr${INSTALL_SUBDIR}}
 
-if test ! -d "${LIB_DIR}"; then
-    echo "dir: ${LIB_DIR} not found"
-    exit 1
-fi
+CMD_PRE_PATCH=${CMD_PRE_PATCH=""}
+CMD_POST_PATCH=${CMD_POST_PATCH=""}
+
+FORCE_CMAKE=${FORCE_CMAKE=false}
+FORCE_CONFIGURE=${FORCE_CONFIGURE=false}
 
 try_fetch_git() {
     if test -z "${GIT_SOURCE}"; then
@@ -33,6 +34,13 @@ try_fetch_git() {
     fi
     if test -n "${GIT_BRANCH}"; then
         git checkout ${GIT_BRANCH}
+    fi
+}
+
+check_libdir() {
+    if test ! -d "${LIB_DIR}"; then
+        echo "dir: ${LIB_DIR} not found"
+        exit 1
     fi
 }
 
@@ -265,11 +273,17 @@ cmake_install() {
 }
 
 pre_patch() {
-    echo "" >/dev/null
+    echo "${CMD_PRE_PATCH}" >/dev/null
+    if test -n "${CMD_PRE_PATCH}"; then
+        eval "${CMD_PRE_PATCH}"
+    fi
 }
 
 post_patch() {
-    echo "" >/dev/null
+    echo "${CMD_POST_PATCH}" >/dev/null
+    if test -n "${CMD_POST_PATCH}"; then
+        eval "${CMD_POST_PATCH}"
+    fi
 }
 
 post_install() {
@@ -279,13 +293,19 @@ post_install() {
     cp -rf ${TMP_INSTALL_DIR}/* ${INSTALL_DIR}
 }
 
-routine_cmake() {
-    echo "routine_cmake"
+routine_prepare() {
+    echo "routine_prepare"
     try_fetch_git
+    check_libdir
     try_make_clean
     rm -rf ${BUILD_DIR}
     git_clean
     pre_patch
+}
+
+routine_cmake() {
+    echo "routine_cmake"
+
     cmake_conf
     cmake_compile
     post_patch
@@ -295,11 +315,7 @@ routine_cmake() {
 
 routine_configure() {
     echo "routine_configure"
-    try_fetch_git
-    try_make_clean
-    rm -rf ${BUILD_DIR}
-    git_clean
-    pre_patch
+
     configure_ac_conf
     configure_conf
     try_make_compile
@@ -309,7 +325,12 @@ routine_configure() {
 }
 
 routine_default() {
-    if test "$(cmake_exist)" = "1"; then
+    routine_prepare
+    if test "${FORCE_CMAKE}" = "true"; then
+        routine_cmake
+    elif test "${FORCE_CONFIGURE}" = "true"; then
+        routine_configure
+    elif test "$(cmake_exist)" = "1"; then
         routine_cmake
     else
         routine_configure
@@ -318,9 +339,11 @@ routine_default() {
 
 case $2 in
 cmake)
+    routine_prepare
     routine_cmake
     ;;
 configure)
+    routine_prepare
     routine_configure
     ;;
 *)

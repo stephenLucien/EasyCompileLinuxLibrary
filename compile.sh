@@ -6,7 +6,7 @@ if test $# -ge 1; then
     LIBNAME=$1
 fi
 
-PLATFORM_TARGET=${PLATFORM_TARGET=host}
+PLATFORM_TARGET=${PLATFORM_TARGET=arm-linux-gnueabihf}
 
 COMMON_SCRIPTS_DIR=${TOP_DIR}/scripts
 PLATFORM_DIR=${TOP_DIR}/platform_${PLATFORM_TARGET}

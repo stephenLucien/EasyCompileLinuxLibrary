@@ -1,0 +1,14 @@
+
+CMAKE_OPTS=
+
+CONFIGURE_OPTS=" \
+ --disable-all-programs \
+ --disable-shared \
+ --enable-static \
+ --enable-pic \
+ --disable-rpath \
+ --disable-year2038 \
+ --without-ncursesw \
+ --without-ncurses \
+ --enable-libuuid \
+ "
