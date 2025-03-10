@@ -9,6 +9,9 @@ PLATFORM_DIR=$(dirname $(realpath ${BASH_SOURCE}))
 
 # SYSTEM_PROCESSOR=
 
+# ALL new libs
+SYSROOT=${PLATFORM_DIR}/sysroot
+
 CFLAGS=""
 CFLAGS="${CFLAGS} -fPIC"
 CFLAGS="${CFLAGS} -fdata-sections -ffunction-sections"
