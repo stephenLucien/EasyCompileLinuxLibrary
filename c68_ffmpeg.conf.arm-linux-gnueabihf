@@ -1,8 +1,9 @@
 unset TOOLCHAIN_TRIPLE
 
+CMD_PRE_PATCH="sed -i -e 's/SSL_library_init/OPENSSL_init_ssl/g' -e 's/-lcrypto/-lcrypto -lpthread -ldl/g' configure"
+ 
 CMAKE_OPTS=""
 CONFIGURE_OPTS=" \
---enable-gpl \
 --enable-version3 \
 --enable-nonfree \
 --disable-runtime-cpudetect \
@@ -27,6 +28,8 @@ CONFIGURE_OPTS=" \
 --enable-parser=aac \
 --enable-bsf=aac_adtstoasc,dump_extradata \
 --enable-network \
+--enable-openssl \
+--enable-pthreads \
 --enable-protocol=async,cache,concat,concatf,crypto,data,fd,file,ftp,http,https,tcp,tls,udp \
 --enable-swresample \
 --enable-avfilter \
