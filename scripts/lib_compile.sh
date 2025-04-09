@@ -19,6 +19,8 @@ CMD_POST_PATCH=${CMD_POST_PATCH=""}
 FORCE_CMAKE=${FORCE_CMAKE=false}
 FORCE_CONFIGURE=${FORCE_CONFIGURE=false}
 
+GEN_MAKE_DB=${GEN_MAKE_DB=false}
+
 try_fetch_git() {
     if test -z "${GIT_SOURCE}"; then
         return
@@ -82,6 +84,7 @@ make_clean() {
     if test $? -ne 0; then
         return
     fi
+    ${MAKE} distclean
     ${MAKE} clean
 }
 
@@ -100,7 +103,22 @@ make_compile() {
     if test $? -ne 0; then
         return
     fi
-    ${MAKE} -j$(nproc) | tee make.log >/dev/null
+    ${MAKE} --no-silent -d -j$(nproc) | tee make.log >/dev/null
+}
+
+make_gen_compiledb() {
+    local COMPILE_DB_CMD=$(which compiledb)
+    if test -n "${COMPILE_DB_CMD}"; then
+        echo ""
+        if test -f make.log; then
+            ${COMPILE_DB_CMD} -v -S -p make.log
+        else
+            echo "make.log not found"
+        fi
+    else
+        echo "compiledb not found, it is needed for generating compile_commands.json"
+        echo "consider installing it by cmd: pip install compiledb"
+    fi
 }
 
 try_make_compile() {
@@ -108,6 +126,9 @@ try_make_compile() {
         make_compile ${BUILD_DIR}
     else
         make_compile ${LIB_DIR}
+    fi
+    if test "${GEN_MAKE_DB}" = "true"; then
+        make_gen_compiledb
     fi
 }
 

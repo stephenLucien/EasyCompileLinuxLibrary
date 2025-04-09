@@ -1,0 +1,35 @@
+unset TOOLCHAIN_TRIPLE
+
+CMAKE_OPTS=""
+CONFIGURE_OPTS=" \
+--enable-gpl \
+--enable-version3 \
+--enable-nonfree \
+--disable-runtime-cpudetect \
+--disable-all \
+--disable-doc \
+--disable-everything \
+--arch=${SYSTEM_PROCESSOR} \
+--cpu=armv4 \
+--enable-cross-compile \
+--cross-prefix=${CROSS_COMPILE} \
+--target-os=linux \
+--enable-pic \
+--disable-asm \
+--enable-debug=3 \
+--disable-optimizations \
+--enable-avcodec \
+--enable-encoder=aac,mp3,pcm_s16le \
+--enable-decoder=aac,mp3,pcm_s16le \
+--enable-avformat \
+--enable-muxer=adts,m4v.mp3,pcm_s16le,wav \
+--enable-demuxer=aac,m4v,mp3,pcm_s16le,wav \
+--enable-parser=aac \
+--enable-bsf=aac_adtstoasc,dump_extradata \
+--enable-network \
+--enable-protocol=async,cache,concat,concatf,crypto,data,fd,file,ftp,http,https,tcp,tls,udp \
+--enable-swresample \
+--enable-avfilter \
+--enable-postproc \
+--enable-filter=aresample \
+"
